@@ -5,3 +5,4 @@ requests
 streamlit-lottie
 gTTS
 google-genai
+deep-translator
