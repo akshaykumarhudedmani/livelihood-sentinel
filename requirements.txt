@@ -1,0 +1,7 @@
+streamlit>=1.52.2
+python-dotenv
+google-cloud-texttospeech
+google-genai
+streamlit-lottie
+requests
+
