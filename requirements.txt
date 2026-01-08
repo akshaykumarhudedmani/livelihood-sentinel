@@ -1,7 +1,7 @@
-streamlit>=1.52.2
+streamlit
+firebase-admin
 python-dotenv
-google-cloud-texttospeech
-google-genai
-streamlit-lottie
 requests
-
+streamlit-lottie
+gTTS
+google-genai
