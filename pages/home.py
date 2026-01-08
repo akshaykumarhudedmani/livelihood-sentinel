@@ -1,7 +1,19 @@
 import streamlit as st
-import time  # <--- Keeping this for the "Deep Scan" loading effect
+import time
+import os
 
-st.set_page_config(page_title="Home", page_icon=":material/home:")
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Home", page_icon="🏠", layout="wide")
+
+# --- PATH-SAFE LOGO LOADER ---
+# This ensures the cloud finds 'hero.jpeg' inside the 'assets' folder
+LOGO_PATH = os.path.join(os.getcwd(), "assets", "hero.jpeg")
+
+def show_logo():
+    if os.path.exists(LOGO_PATH):
+        st.image(LOGO_PATH, use_container_width=True)
+    else:
+        st.warning(f"⚠️ hero.jpeg missing in /assets/")
 
 # ==========================================
 # 0. AUTH CHECK
@@ -16,7 +28,7 @@ if not st.session_state.get("logged_in", False):
 if not st.session_state.get("profile_complete", False):
     st.title("Welcome to Livelihood Sentinel")
     
-    c1, c2 = st.columns([1, 1])
+    c1, c2 = st.columns([1.5, 1])
     with c1:
         st.markdown("### Let's secure your future.")
         st.write(
@@ -25,20 +37,13 @@ if not st.session_state.get("profile_complete", False):
         )
         st.info("It takes 30 seconds to setup your profile.")
         
-        # The Action Button
         if st.button("🚀 Start Tracking Setup", type="primary", use_container_width=True):
             st.switch_page("pages/tracking.py")
 
     with c2:
-        # Show Logo here too for consistency
-        try:
-            # REPLACE 'logo.png' WITH YOUR EXACT FILENAME IF DIFFERENT
-            st.image("logo.png", width=250) 
-        except:
-            st.markdown("<h1>📋</h1>", unsafe_allow_html=True)
+        show_logo()
     
     st.stop()
-
 
 # ==========================================
 # STATE 2: ACTIVE DASHBOARD (Profile Done)
@@ -59,7 +64,7 @@ else:
     status_color = "green"
 
 # --- Dashboard Header ---
-c1, c2 = st.columns([2, 1]) # Adjusted ratio to give logo space
+c1, c2 = st.columns([2, 1])
 
 with c1:
     st.title("Livelihood Sentinel")
@@ -68,7 +73,6 @@ with c1:
     st.markdown(f"### Status: :{status_color}[{status_msg}]")
     st.write("Your **Financial Immune System** is active.")
     
-    # --- SATELLITE SCAN BUTTON ---
     if st.button("🔍 Run Deep Scan", help="Analyze new alerts"):
         with st.status("📡 Initializing Sentinel Scan...", expanded=True) as status:
             st.write("Connecting to SEBI/RBI satellite feeds...")
@@ -82,13 +86,7 @@ with c1:
             st.switch_page("pages/news_alerts.py")
 
 with c2:
-    # --- LOGO SECTION ---
-    try:
-        # MAKE SURE 'logo.png' IS IN YOUR FOLDER
-        st.image("logo.png", use_container_width=True)
-    except:
-        # Fallback if image is missing
-        st.warning("⚠️ logo.png not found")
+    show_logo()
 
 st.divider()
 
@@ -102,7 +100,7 @@ col1.metric("Monthly Income", f"₹{income:,}")
 col2.metric("Monthly Burn", f"₹{burn:,}")
 col3.metric("Net Savings", f"₹{net_savings:,}")
 
-# Infinite runway handling for display
+# Infinite runway handling
 if runway > 900:
     runway_display = "Infinite"
     delta_display = "Safe"
@@ -122,7 +120,6 @@ st.divider()
 st.subheader("🤖 Gemini Analysis")
 
 with st.container(border=True):
-    # Dynamic text based on real math
     if risk > 50:
         st.markdown(f"**Gemini Insight:** High burn rate detected (₹{burn:,}). "
                     "Action: Check 'Variable' expenses in Tracking.")
@@ -141,12 +138,12 @@ with left:
     with st.container(border=True):
         st.write("⚠️ **Threat Preview**")
         st.caption("Active Alerts")
-        if st.button("View News & Alerts", key="nav_news"):
+        if st.button("View News & Alerts", key="nav_news", use_container_width=True):
             st.switch_page("pages/news_alerts.py")
 
 with right:
     with st.container(border=True):
         st.write("🎙️ **Daily Briefing**")
         st.caption("Audio Update")
-        if st.button("Open Voice Assistant", key="nav_voice"):
+        if st.button("Open Voice Assistant", key="nav_voice", use_container_width=True):
             st.switch_page("pages/voice.py")
