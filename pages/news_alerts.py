@@ -177,7 +177,6 @@ simulations.append({
 })
 
 # --- SYNCHRONIZE WITH VOICE ENGINE ---
-# We overwrite the session alerts so 'Voice' page can see these simulations
 st.session_state["alerts"] = simulations
 
 # --- RENDER SIMULATIONS ---
@@ -199,8 +198,16 @@ for sim in simulations:
             st.markdown(f":{color}[**{sim['title']}**]")
             st.write(sim['summary'])
             
-            # VOICE BUTTON (Replaces AI Analysis)
-            # This directly links to voice.py
-            if st.button("🎙️ Listen to Briefing", key=f"btn_{sim['id']}"):
-                st.session_state["voice_selected_alert_id"] = sim["id"]
-                st.switch_page("pages/voice.py")
+            # --- DUAL ACTION BUTTONS ---
+            btn_col1, btn_col2 = st.columns([1, 1])
+            
+            with btn_col1:
+                # 1. VOICE BUTTON
+                if st.button("🎙️ Listen", key=f"btn_voice_{sim['id']}", use_container_width=True):
+                    st.session_state["voice_selected_alert_id"] = sim["id"]
+                    st.switch_page("pages/voice.py")
+            
+            with btn_col2:
+                # 2. ADVICE BUTTON (New Feature)
+                if st.button("💡 View Protocols", key=f"btn_advice_{sim['id']}", use_container_width=True):
+                    st.switch_page("pages/advice.py")
