@@ -1,149 +1,243 @@
 import streamlit as st
 import time
 import os
+import google.generativeai as genai
+from google.api_core import exceptions
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Home", page_icon="🏠", layout="wide")
+st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 
-# --- PATH-SAFE LOGO LOADER ---
-# This ensures the cloud finds 'hero.jpeg' inside the 'assets' folder
+# --- ASSET LOADER ---
 LOGO_PATH = os.path.join(os.getcwd(), "assets", "hero.jpeg")
 
 def show_logo():
     if os.path.exists(LOGO_PATH):
         st.image(LOGO_PATH, use_container_width=True)
-    else:
-        st.warning(f"⚠️ hero.jpeg missing in /assets/")
 
 # ==========================================
-# 0. AUTH CHECK
+# 0. AUTH & SECURITY GATE
 # ==========================================
 if not st.session_state.get("logged_in", False):
-    st.warning("Please login as demo to continue.")
+    st.warning("⚠️ Access Denied. Please login first.")
     st.stop()
 
 # ==========================================
-# STATE 1: NEW USER (Profile Not Setup)
+# 1. AI ANALYSIS ENGINE (Professional Tone)
+# ==========================================
+def get_professional_insight(burn, runway, risk, income):
+    """
+    Asks Gemini for a structured professional assessment.
+    """
+    api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
+    
+    if not api_key:
+        return None
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-flash-latest')
+
+        # Professional Prompt
+        prompt = (
+            f"Act as a personal financial advisor. Status: "
+            f"Burn: {burn}, Income: {income}, Runway: {runway} days, Risk Score: {risk}/100. "
+            f"Generate a 3-line assessment:\n"
+            f"RISK: [Identify the main financial risk. Max 10 words]\n"
+            f"IMPACT: [What is the consequence? Max 10 words]\n"
+            f"ACTION: [One specific recommendation. Max 10 words]\n"
+            f"Do not use markdown. Just plain text lines."
+        )
+
+        # Retry Logic
+        for attempt in range(3):
+            try:
+                response = model.generate_content(prompt)
+                return response.text.strip()
+            except exceptions.ResourceExhausted:
+                time.sleep(2)
+                continue
+            except Exception:
+                return None
+        
+        return None
+
+    except Exception:
+        return None
+
+# ==========================================
+# 2. STATE 1: INITIALIZATION (New User)
 # ==========================================
 if not st.session_state.get("profile_complete", False):
     st.title("Welcome to Livelihood Sentinel")
+    st.markdown("### Step 1: Profile Setup")
     
     c1, c2 = st.columns([1.5, 1])
     with c1:
-        st.markdown("### Let's secure your future.")
-        st.write(
-            "To activate your **Financial Immune System**, we need to know your "
-            "survival baseline (Income, Expenses, Assets)."
-        )
-        st.info("It takes 30 seconds to setup your profile.")
+        st.write("To provide accurate risk alerts, we need to establish your financial baseline.")
+        st.write("Please configure your **Income, Expenses & Assets** to activate the dashboard.")
         
-        if st.button("🚀 Start Tracking Setup", type="primary", use_container_width=True):
+        st.info("⏱️ Time required: ~45 seconds")
+        
+        st.write("")
+        if st.button("▶️ Start Configuration", type="primary", use_container_width=True):
             st.switch_page("pages/tracking.py")
 
     with c2:
         show_logo()
-    
+        
     st.stop()
 
 # ==========================================
-# STATE 2: ACTIVE DASHBOARD (Profile Done)
+# 3. STATE 2: MAIN DASHBOARD (Active)
 # ==========================================
 
-# --- Logic: Risk Assessment ---
-risk = int(st.session_state.get("risk_score", 0))
-runway = int(st.session_state.get("runway_days", 0))
-
-if risk >= 75 or runway <= 15:
-    status_msg = "CRITICAL THREATS DETECTED"
-    status_color = "red"
-elif risk >= 50 or runway <= 30:
-    status_msg = "MONITORING RISKS"
-    status_color = "orange"
-else:
-    status_msg = "LIVELIHOOD SECURE"
-    status_color = "green"
-
-# --- Dashboard Header ---
-c1, c2 = st.columns([2, 1])
-
-with c1:
-    st.title("Livelihood Sentinel")
-    st.caption(f"Language: {st.session_state.get('lang', 'English')}")
-    
-    st.markdown(f"### Status: :{status_color}[{status_msg}]")
-    st.write("Your **Financial Immune System** is active.")
-    
-    if st.button("🔍 Run Deep Scan", help="Analyze new alerts"):
-        with st.status("📡 Initializing Sentinel Scan...", expanded=True) as status:
-            st.write("Connecting to SEBI/RBI satellite feeds...")
-            time.sleep(0.8)
-            st.write("Filtering noise & irrelevant headlines...")
-            time.sleep(0.8)
-            st.write("Applying Gemini Risk Models...")
-            time.sleep(0.8)
-            status.update(label="Scan Complete! Redirecting...", state="complete", expanded=False)
-            time.sleep(0.5)
-            st.switch_page("pages/news_alerts.py")
-
-with c2:
-    show_logo()
-
-st.divider()
-
-# --- The Metrics ---
+# --- LOAD METRICS ---
 income = int(st.session_state.get("monthly_income", 0))
 burn = int(st.session_state.get("burn", 0))
-net_savings = int(st.session_state.get("net_savings", 0))
+runway = int(st.session_state.get("runway_days", 0))
+risk = int(st.session_state.get("risk_score", 0))
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Monthly Income", f"₹{income:,}")
-col2.metric("Monthly Burn", f"₹{burn:,}")
-col3.metric("Net Savings", f"₹{net_savings:,}")
+# --- HEADER SECTION ---
+c1, c2 = st.columns([0.85, 0.15])
+with c1:
+    st.title("Financial Dashboard")
+    st.caption(f"Status: Active | User: Demo | Risk Score: {risk}/100")
+with c2:
+    if st.button("🔄 Refresh"):
+        st.rerun()
 
-# Infinite runway handling
-if runway > 900:
-    runway_display = "Infinite"
-    delta_display = "Safe"
-else:
-    runway_display = f"{runway} Days"
-    delta_display = "-2 days" if runway < 30 else "Stable"
-
-col4.metric(
-    "Survival Runway", 
-    runway_display, 
-    delta=delta_display, 
-    delta_color="inverse"
-)
-
-# --- Gemini Section ---
 st.divider()
-st.subheader("🤖 Gemini Analysis")
 
-with st.container(border=True):
-    if risk > 50:
-        st.markdown(f"**Gemini Insight:** High burn rate detected (₹{burn:,}). "
-                    "Action: Check 'Variable' expenses in Tracking.")
-    elif runway > 900:
-        st.markdown("**Gemini Insight:** You are financially secure. "
-                    "Recommendation: Consider investing surplus cash into high-yield assets.")
-    else:
-        st.markdown("**Gemini Insight:** Financial health is stable. "
-                    "Recommendation: Build an emergency buffer for crop seasonality.")
+# ==========================================
+# 4. COMPONENT: RUNWAY STATUS (Visual Bar)
+# ==========================================
+# Logic: Map 0-180 days to 0-100% progress
+runway_cap = 180
+progress_val = min(1.0, max(0.0, runway / runway_cap))
+
+# Color Logic for text
+if runway <= 30:
+    gauge_msg = "CRITICAL LOW"
+elif runway <= 90:
+    gauge_msg = "NEEDS ATTENTION"
+else:
+    gauge_msg = "HEALTHY"
+
+st.subheader("⏳ Survival Runway")
+st.progress(progress_val, text=f"Runway Remaining: {runway} Days ({gauge_msg})")
+
+if runway > 365:
+    st.caption("✅ You have over 1 year of reserves. Long-term security achieved.")
+elif runway < 30:
+    st.caption("🚨 **Action Required:** Your savings will be depleted in less than 30 days.")
+
+st.write("")
+
+# ==========================================
+# 5. COMPONENT: AI RISK ASSESSMENT (The Core)
+# ==========================================
+st.subheader("🧠 AI Risk Assessment")
+
+# Check/Load AI Insight
+if "hero_sitrep" not in st.session_state:
+    st.session_state["hero_sitrep"] = None
+
+# Layout
+sit_col1, sit_col2 = st.columns([3, 1])
+
+with sit_col1:
+    container = st.container(border=True)
     
-    st.caption("Powered by Gemini 1.5 Flash • Real-time Calculation")
+    if st.session_state["hero_sitrep"]:
+        # Parse the 3 lines (RISK / IMPACT / ACTION)
+        lines = st.session_state["hero_sitrep"].split('\n')
+        risk_txt = "Analyzing..."
+        impact_txt = "Calculating..."
+        action_txt = "Standby..."
+        
+        for line in lines:
+            if "RISK:" in line: risk_txt = line.replace("RISK:", "").strip()
+            if "IMPACT:" in line: impact_txt = line.replace("IMPACT:", "").strip()
+            if "ACTION:" in line: action_txt = line.replace("ACTION:", "").strip()
+            
+        # UI DISPLAY
+        container.markdown(f"**⚠️ RISK:** {risk_txt}")
+        container.markdown(f"**📉 IMPACT:** {impact_txt}")
+        container.markdown(f"**✅ ACTION:** :green-background[{action_txt}]")
+        
+    else:
+        container.info("Ready to analyze your latest financial data.")
+        container.caption("Click 'Run Analysis' to generate a risk report.")
 
-# --- Footer Navigation ---
-left, right = st.columns(2)
-with left:
+with sit_col2:
+    # Large Action Button
+    st.write("")
+    if st.button("⚡ Run Analysis", type="primary", use_container_width=True):
+        with st.spinner("Processing financial data..."):
+            time.sleep(0.5)
+            sitrep = get_professional_insight(burn, runway, risk, income)
+            if sitrep:
+                st.session_state["hero_sitrep"] = sitrep
+            else:
+                st.session_state["hero_sitrep"] = (
+                    "RISK: Connection unstable.\n"
+                    "IMPACT: Cannot calculate real-time risk.\n"
+                    "ACTION: Please retry analysis."
+                )
+        st.rerun()
+
+st.divider()
+
+# ==========================================
+# 6. COMPONENT: CASHFLOW ANALYSIS
+# ==========================================
+st.subheader("📊 Cashflow Analysis")
+
+# Ratio of Burn vs Income
+ratio = (burn / income) * 100 if income > 0 else 100
+ratio = min(ratio, 100) # Cap at 100 for display
+
+cf_c1, cf_c2, cf_c3 = st.columns([1, 4, 1])
+
+with cf_c1:
+    st.metric("Total Income", f"₹{income:,}", delta="Monthly Inflow")
+
+with cf_c2:
+    # The Visual Bar
+    st.write("")
+    st.write("")
+    st.progress(ratio / 100, text=f"Burn Rate: {int(ratio)}% of Income")
+    
+    if burn > income:
+        st.error(f"⚠️ DEFICIT: Spending exceeds income by ₹{burn - income:,}")
+    else:
+        st.success(f"✅ SURPLUS: Saving ₹{income - burn:,} / month")
+
+with cf_c3:
+    st.metric("Total Expenses", f"₹{burn:,}", delta="- Monthly Outflow", delta_color="inverse")
+
+st.divider()
+
+# ==========================================
+# 7. NAVIGATION
+# ==========================================
+nav_c1, nav_c2 = st.columns(2)
+
+with nav_c1:
     with st.container(border=True):
-        st.write("⚠️ **Threat Preview**")
-        st.caption("Active Alerts")
-        if st.button("View News & Alerts", key="nav_news", use_container_width=True):
+        st.subheader("📡 News & Alerts")
+        alerts_count = len(st.session_state.get("alerts", []))
+        if alerts_count > 0:
+            st.markdown(f":red[**{alerts_count} Active Alerts**]")
+        else:
+            st.markdown(":green[**No immediate threats**]")
+            
+        if st.button("View Details ->", use_container_width=True):
             st.switch_page("pages/news_alerts.py")
 
-with right:
+with nav_c2:
     with st.container(border=True):
-        st.write("🎙️ **Daily Briefing**")
-        st.caption("Audio Update")
-        if st.button("Open Voice Assistant", key="nav_voice", use_container_width=True):
-            st.switch_page("pages/voice.py")
+        st.subheader("💡 Advice & Protocols")
+        st.markdown("Get tailored financial steps.")
+        if st.button("Open Advice Console ->", use_container_width=True):
+            st.switch_page("pages/advice.py")

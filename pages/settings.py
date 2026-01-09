@@ -80,3 +80,5 @@ with st.container(border=True):
         if st.button("Logout (clear everything)", type="primary", use_container_width=True):
             st.session_state.clear()
             st.rerun()
+
+            
