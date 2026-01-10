@@ -7,19 +7,42 @@ import os
 st.set_page_config(page_title="News & Alerts", page_icon="📰", layout="wide")
 
 # ==========================================
-# 0. AUTH & SECURITY
+# 0. CONFIG & STREAM MAP
+# ==========================================
+STREAM_RSS_MAP = {
+    "CSE / Tech": "https://www.sciencedaily.com/rss/computers_math/computer_science.xml",
+    "Finance / Commerce": "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",
+    "Medical / Biology": "https://www.sciencedaily.com/rss/health_medicine.xml",
+    "Arts / Humanities": "https://indianexpress.com/section/lifestyle/art-and-culture/feed/",
+    "Law": "https://www.barandbench.com/route/feed.xml",
+    "Architecture": "https://www.archdaily.com/feed/rss/",
+    "Management (BBA/MBA)": "https://economictimes.indiatimes.com/small-biz/rssfeeds/5575607.cms",
+    "General": "https://indianexpress.com/section/education/feed/"
+}
+
+# Motivation Quotes Map (Field Specific)
+MOTIVATION_MAP = {
+    "CSE / Tech": "“Talk is cheap. Show me the code.” – Linus Torvalds",
+    "Finance / Commerce": "“Price is what you pay. Value is what you get.” – Warren Buffett",
+    "Medical / Biology": "“Wherever the art of Medicine is loved, there is also a love of Humanity.”",
+    "Arts / Humanities": "“Creativity takes courage.” – Henri Matisse",
+    "Law": "“Justice cannot be for one side alone, but must be for both.”",
+    "Architecture": "“We shape our buildings; thereafter they shape us.”",
+    "Management (BBA/MBA)": "“Leadership is the capacity to translate vision into reality.”",
+    "General": "“The expert in anything was once a beginner.”"
+}
+
+# ==========================================
+# 1. AUTH & SECURITY
 # ==========================================
 if not st.session_state.get("logged_in", False):
     st.warning("⚠️ Access Denied. Please login first.")
     st.stop()
 
 # ==========================================
-# 1. AI HELPER (Decrypt Only)
+# 2. AI HELPER
 # ==========================================
 def ask_gemini_decrypt(headline):
-    """
-    Translates boring official jargon into 1 simple sentence.
-    """
     api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
     if not api_key: return "⚠️ API Key missing."
 
@@ -27,47 +50,13 @@ def ask_gemini_decrypt(headline):
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-flash-latest')
         prompt = f"Translate this news headline into 1 simple, urgent sentence for a common person: '{headline}'"
-        
         response = model.generate_content(prompt)
         return response.text.strip()
     except:
-        return "Could not decrypt."
-
-# ==========================================
-# 2. PROFILE LOADING (Strict Input Gate)
-# ==========================================
-if not st.session_state.get("profile_complete", False):
-    st.info("⚠️ Profile Missing. We cannot filter news without your financial inputs.")
-    if st.button("Go to Tracking Setup"):
-        st.switch_page("pages/tracking.py")
-    st.stop()
-
-# Load User Inputs
-income = int(st.session_state.get("monthly_income", 0))
-transport = int(st.session_state.get("transport", 0))
-emi_total = int(st.session_state.get("emi_total", 0))
-burn = int(st.session_state.get("burn", 0))
-runway = int(st.session_state.get("runway_days", 0))
-crops = st.session_state.get("crops_grown", [])
-held_assets = st.session_state.get("held_assets", [])
-
-# Determine User Type
-is_investor = any(x in held_assets for x in ["Stocks / Mutual Funds", "Gold", "Crypto (BTC/ETH)"])
-is_borrower = emi_total > 0
-is_farmer = len(crops) > 0
-is_commuter = transport > 0
-
-st.title("📰 News & Alerts")
-st.caption("Live official updates • Personalized simulation drills")
-st.divider()
-
-# ==========================================
-# 3. REAL NEWS (Official Feeds)
-# ==========================================
-st.subheader("🏛️ Official Headlines (Live)")
+        return "Could not decrypt. Server busy."
 
 @st.cache_data(ttl=600)
-def fetch_rss(url, limit=2):
+def fetch_rss(url, limit=3):
     try:
         req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urlopen(req, timeout=5) as resp:
@@ -78,136 +67,193 @@ def fetch_rss(url, limit=2):
             link = item.findtext("link")
             if title: items.append({"title": title, "link": link})
         return items
-    except:
+    except Exception:
         return []
 
-# Layout Logic based on Input
-col1, col2 = st.columns(2)
+# ==========================================
+# 3. ROUTING LOGIC
+# ==========================================
+user_type = st.session_state.get("user_type", "Standard")
+stream = st.session_state.get("study_stream", "General")
 
-with col1:
-    st.markdown("**🏦 Economy & Banking (RBI)**")
-    rbi_news = fetch_rss("https://www.rbi.org.in/pressreleases_rss.xml", 2)
-    if rbi_news:
-        for i, item in enumerate(rbi_news):
-            with st.container(border=True):
-                st.markdown(f"[{item['title']}]({item['link']})")
-                # THE DECRYPT BUTTON
-                k = f"dec_rbi_{i}"
-                if st.button("✨ Decrypt", key=k, help="Translate legal jargon"):
-                    with st.spinner(".."):
-                        dec = ask_gemini_decrypt(item['title'])
-                        st.info(dec)
-    else:
-        st.caption("No updates.")
-
-with col2:
-    if is_investor:
-        st.markdown("**📈 Markets (SEBI)**")
-        sebi_news = fetch_rss("https://www.sebi.gov.in/sebirss.xml", 2)
-        if sebi_news:
-            for i, item in enumerate(sebi_news):
-                with st.container(border=True):
-                    st.markdown(f"[{item['title']}]({item['link']})")
-                    k = f"dec_sebi_{i}"
-                    if st.button("✨ Decrypt", key=k):
-                        with st.spinner(".."):
-                            dec = ask_gemini_decrypt(item['title'])
-                            st.info(dec)
-    else:
-        # If not investor, show something generic or empty
-        st.markdown("**🌾 Agriculture (Agmarknet)**")
-        st.caption("Market prices trending stable.")
-        st.link_button("Open Mandi Prices", "https://agmarknet.gov.in")
+if user_type == "Student":
+    st.title("📰 Campus & Career Radar")
+    st.caption(f"Curated Intelligence for **{stream}** Students")
+else:
+    st.title("📰 Market & Livelihood Alerts")
+    st.caption("Official RBI/SEBI Feeds • Personalized Risk Drills")
 
 st.divider()
 
 # ==========================================
-# 4. SIMULATION DRILLS (Strictly Input Based)
+# 4. LIVE NEWS FEED
 # ==========================================
-st.subheader("🚨 Simulation Drills (Demo Only)")
-st.caption("These are **GENERATED SCENARIOS** to test your financial resilience.")
+st.subheader("📡 Live Feed")
+col1, col2 = st.columns(2)
 
-simulations = []
+with col1:
+    if user_type == "Student":
+        target_feed = STREAM_RSS_MAP.get(stream, STREAM_RSS_MAP["General"])
+        st.markdown(f"**🎓 Industry Updates ({stream.split('/')[0]})**")
+    else:
+        target_feed = "https://www.rbi.org.in/pressreleases_rss.xml"
+        st.markdown("**🏦 Economy & Policy (RBI)**")
 
-# DRILL 1: FUEL HIKE (Only for Commuters)
-if is_commuter:
-    impact_amt = int(transport * 0.15)
-    simulations.append({
-        "id": "fuel_drill",
-        "icon": "⛽",
-        "title": "[SIMULATION] Fuel Supply Shock",
-        "desc": "Global oil prices spike by 15%.",
-        "summary": f"Global oil prices spike by 15%. Your transport costs increase by ₹{impact_amt}/month.",
-        "level": "WARNING"
-    })
+    news_items = fetch_rss(target_feed, 3)
+    if news_items:
+        for i, item in enumerate(news_items):
+            with st.container(border=True):
+                st.markdown(f"[{item['title']}]({item['link']})")
+                if st.button("✨ Decrypt", key=f"d1_{i}"):
+                    with st.spinner(".."):
+                        st.info(ask_gemini_decrypt(item['title']))
+    else:
+        st.caption("No live updates.")
 
-# DRILL 2: INTEREST RATE HIKE (Only for Borrowers)
-if is_borrower:
-    emi_impact = int(emi_total * 0.05)
-    simulations.append({
-        "id": "rate_drill",
-        "icon": "💸",
-        "title": "[SIMULATION] Interest Rate Surge",
-        "desc": "Central Bank raises repo rate by 50bps.",
-        "summary": f"Central Bank raises repo rate by 50bps. Your loan EMIs may rise by ~₹{emi_impact}/month.",
-        "level": "CRITICAL"
-    })
+with col2:
+    if user_type == "Student":
+        st.markdown("**🏫 General Education News**")
+        sec_feed = STREAM_RSS_MAP["General"]
+    else:
+        st.markdown("**📈 Market Signals (SEBI)**")
+        sec_feed = "https://www.sebi.gov.in/sebirss.xml"
 
-# DRILL 3: WEATHER EVENT (Only for Farmers)
-if is_farmer:
-    crop_list = ", ".join(crops)
-    simulations.append({
-        "id": "weather_drill",
-        "icon": "⛈️",
-        "title": "[SIMULATION] Unseasonal Rainfall Alert",
-        "desc": f"Heavy rains forecast in your district.",
-        "summary": f"Heavy rains forecast. High risk of fungal infection for: {crop_list}.",
-        "level": "CRITICAL"
-    })
+    sec_items = fetch_rss(sec_feed, 3)
+    if sec_items:
+        for i, item in enumerate(sec_items):
+            with st.container(border=True):
+                st.markdown(f"[{item['title']}]({item['link']})")
+                if st.button("✨ Decrypt", key=f"d2_{i}"):
+                    with st.spinner(".."):
+                        st.info(ask_gemini_decrypt(item['title']))
+    else:
+        st.caption("No live updates.")
 
-# DRILL 4: INFLATION (Everyone)
-inflation_amt = int(income * 0.03)
-simulations.append({
-    "id": "inflation_drill",
-    "icon": "🛒",
-    "title": "[SIMULATION] Cost of Living Spike",
-    "desc": "Food inflation hits 3-year high.",
-    "summary": f"Food inflation hits 3-year high. Estimated buying power loss: ₹{inflation_amt}/month.",
-    "level": "ADVISORY"
-})
+st.divider()
 
-# --- SYNCHRONIZE WITH VOICE ENGINE ---
-st.session_state["alerts"] = simulations
-
-# --- RENDER SIMULATIONS ---
-if not simulations:
-    st.success("No active drills relevant to your profile.")
-
-for sim in simulations:
-    # Color coding
-    color_map = {"CRITICAL": "red", "WARNING": "orange", "ADVISORY": "blue"} 
-    color = color_map.get(sim["level"], "gray")
+# ==========================================
+# 5. CARDS: MOTIVATION vs DRILLS
+# ==========================================
+if user_type == "Student":
+    st.subheader("🚀 Daily Boost")
+    st.caption("Fuel for your mind and wallet.")
     
+    # 1. Motivation Card
+    quote = MOTIVATION_MAP.get(stream, MOTIVATION_MAP["General"])
+    
+    # Object for Voice Engine
+    motivation_obj = {
+        "id": "daily_motivation",
+        "title": f"Study Motivation ({stream.split('/')[0]})",
+        "summary": quote,
+        "desc": "Daily inspiration for your field."
+    }
+
     with st.container(border=True):
         c_icon, c_info = st.columns([0.1, 0.9])
-        
         with c_icon:
-            st.markdown(f"## {sim['icon']}")
-            
+            st.markdown("## 🔥")
         with c_info:
-            st.markdown(f":{color}[**{sim['title']}**]")
-            st.write(sim['summary'])
+            st.markdown(f"**{motivation_obj['title']}**")
+            st.write(f"*{quote}*")
+            st.caption("Keep pushing. You are building your future.")
             
-            # --- DUAL ACTION BUTTONS ---
-            btn_col1, btn_col2 = st.columns([1, 1])
+            # THE FIXED LISTEN BUTTON
+            if st.button("🎙️ Listen", key="btn_voice_mot"):
+                # 1. Clear old audio cache (CRITICAL FIX)
+                st.session_state.pop("voice_audio_mp3", None)
+                st.session_state.pop("translated_script", None)
+                st.session_state.pop("voice_script", None)
+                
+                # 2. Set new data
+                st.session_state["voice_selected_alert_id"] = "daily_motivation"
+                st.session_state["alerts"] = [motivation_obj] 
+                st.switch_page("pages/voice.py")
+
+    # 2. Financial Advice Card (Compassionate)
+    advice_text = "Never be ashamed of not having money. It is a temporary stage, not your identity. Save what you can. If you really need to borrow, ask close friends or family—there is always someone willing to help."
+    advice_obj = {
+        "id": "financial_advice_note",
+        "title": "Sentinel Advice: On Being Broke",
+        "summary": advice_text,
+        "desc": "Financial mental health check."
+    }
+
+    with st.container(border=True):
+        c_icon, c_info = st.columns([0.1, 0.9])
+        with c_icon:
+            st.markdown("## 💚")
+        with c_info:
+            st.markdown(f"**{advice_obj['title']}**")
+            st.write("Never be ashamed of not having money. It is a temporary stage, not your identity.")
+            st.write("Save what you can. If you really need to borrow, ask close friends or family—there is always someone willing to help.")
             
-            with btn_col1:
-                # 1. VOICE BUTTON
-                if st.button("🎙️ Listen", key=f"btn_voice_{sim['id']}", use_container_width=True):
-                    st.session_state["voice_selected_alert_id"] = sim["id"]
-                    st.switch_page("pages/voice.py")
-            
-            with btn_col2:
-                # 2. ADVICE BUTTON (New Feature)
-                if st.button("💡 View Protocols", key=f"btn_advice_{sim['id']}", use_container_width=True):
-                    st.switch_page("pages/advice.py")
+            # THE FIXED LISTEN BUTTON
+            if st.button("🎙️ Listen", key="btn_voice_adv"):
+                # 1. Clear old audio cache (CRITICAL FIX)
+                st.session_state.pop("voice_audio_mp3", None)
+                st.session_state.pop("translated_script", None)
+                st.session_state.pop("voice_script", None)
+                
+                # 2. Set new data
+                st.session_state["voice_selected_alert_id"] = "financial_advice_note"
+                st.session_state["alerts"] = [advice_obj]
+                st.switch_page("pages/voice.py")
+
+else:
+    # --- STANDARD MODE: KEEPS DRILLS ---
+    st.subheader("🚨 Threat Simulations")
+    st.caption("Potential scenarios to test your resilience.")
+
+    simulations = []
+    crops = st.session_state.get("crops_grown", [])
+    transport = int(st.session_state.get("transport", 0))
+    emi_total = int(st.session_state.get("emi_total", 0))
+
+    if transport > 0:
+        simulations.append({
+            "id": "fuel_drill", "icon": "⛽", "title": "Fuel Supply Shock",
+            "desc": "Global oil prices spike by 15%.",
+            "summary": f"Impact: Transport cost rises by ~₹{int(transport*0.15)}.", "level": "WARNING"
+        })
+
+    if emi_total > 0:
+        simulations.append({
+            "id": "rate_drill", "icon": "📉", "title": "Interest Rate Surge",
+            "desc": "Repo rate raised by 50bps.",
+            "summary": "Loan tenure might increase by 6-12 months.", "level": "CRITICAL"
+        })
+
+    if not simulations:
+        simulations.append({
+            "id": "inflation_drill", "icon": "🛒", "title": "Cost of Living Spike",
+            "desc": "Vegetable prices double.",
+            "summary": "Buying power reduced. Cut discretionary spend.", "level": "ADVISORY"
+        })
+
+    for sim in simulations:
+        color_map = {"CRITICAL": "red", "WARNING": "orange", "ADVISORY": "blue"} 
+        color = color_map.get(sim["level"], "gray")
+        
+        with st.container(border=True):
+            c_icon, c_info = st.columns([0.1, 0.9])
+            with c_icon:
+                st.markdown(f"## {sim['icon']}")
+            with c_info:
+                st.markdown(f":{color}[**{sim['title']}**]")
+                st.write(sim['summary'])
+                
+                b1, b2 = st.columns([1, 1])
+                with b1:
+                    if st.button("🎙️ Listen", key=f"btn_voice_{sim['id']}", use_container_width=True):
+                        # 1. Clear old audio cache (CRITICAL FIX)
+                        st.session_state.pop("voice_audio_mp3", None)
+                        st.session_state.pop("translated_script", None)
+                        st.session_state.pop("voice_script", None)
+
+                        st.session_state["voice_selected_alert_id"] = sim["id"]
+                        st.session_state["alerts"] = simulations
+                        st.switch_page("pages/voice.py")
+                with b2:
+                     if st.button("💡 Protocol", key=f"btn_advice_{sim['id']}", use_container_width=True):
+                         st.switch_page("pages/advice.py")
