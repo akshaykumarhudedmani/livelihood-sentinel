@@ -14,10 +14,33 @@ st.title("💰 Tracking Setup")
 st.caption("Configure your profile to activate the Sentinel.")
 
 # ==========================================
-# 1. THE MAIN SWITCH
+# 1. THE MAIN SWITCH (FIXED VISIBILITY)
 # ==========================================
+
+# --- [FIXED] CSS: High Contrast Text (Black on Grey) ---
+st.markdown("""
+    <style>
+    /* 1. Make the container look like a distinct card */
+    div[role="radiogroup"] {
+        background-color: #f0f2f6; /* Light Grey Background */
+        padding: 20px;
+        border-radius: 12px;
+        border: 2px solid #ccc;
+    }
+
+    /* 2. Target the text inside the radio buttons to be BIG and DARK */
+    div[role="radiogroup"] p {
+        font-size: 22px !important;
+        font-weight: 700 !important;
+        color: #1f1f1f !important; /* Force Black Text so it's readable */
+    }
+    </style>
+""", unsafe_allow_html=True)
+# -------------------------------------------------------------
+
+st.subheader("👇 SELECT YOUR MODE")
 user_type = st.radio(
-    "Select your Profile Type:",
+    "Choose your tracking style:",
     ["🌾 Standard (Family/Farm/Business)", "🎓 Student (Pocket Money)"],
     index=0 if st.session_state.get("user_type") != "Student" else 1,
     horizontal=True,
@@ -70,7 +93,6 @@ def compute_student_stats(wallet_balance, daily_limit):
 if "Standard" in user_type:
     st.subheader("Step 1: Income Sources")
     
-    
     livelihood_sources = st.multiselect(
         "How do you earn?",
         options=[
@@ -81,7 +103,6 @@ if "Standard" in user_type:
         ],
         default=st.session_state.get("livelihood_sources", ["Fixed income (Salary/Pension)"]),
     )
-
     
     fixed_monthly = 0
     if "Fixed income (Salary/Pension)" in livelihood_sources:
@@ -96,7 +117,6 @@ if "Standard" in user_type:
     production_type = "N/A"
     crops_grown = []
 
-    
     if "Production-based (Farming/Business)" in livelihood_sources:
         st.markdown("---")
         st.caption("🏭 Production / Farming Details")
@@ -107,9 +127,7 @@ if "Standard" in user_type:
         with c_prod2:
             farm_avg_monthly = st.number_input("Avg. Monthly Revenue (₹)", min_value=0, step=500, value=int(st.session_state.get("farm_avg_monthly", 0)))
         
-    
         crop_input_cost = st.number_input("Input Costs (Seeds/Stock) (₹)", min_value=0, step=500, value=int(st.session_state.get("crop_input_cost", 0)))
-        
         
         if production_type == "Farming":
             crops_grown = st.multiselect(
@@ -126,7 +144,6 @@ if "Standard" in user_type:
         st.caption("📈 Investment Details")
         sip = st.number_input("Monthly SIP/Investment (₹)", min_value=0, step=500, value=int(st.session_state.get("sip", 0)))
         
-        
         held_assets = st.multiselect(
             "Portfolio Assets (for Market News)",
             ["Stocks", "Mutual Funds", "Gold", "Crypto", "Real Estate"],
@@ -135,7 +152,6 @@ if "Standard" in user_type:
 
     st.divider()
     st.subheader("Step 2: Core Expenses")
-    
     
     total_income = fixed_monthly + gig_avg_monthly + farm_avg_monthly
     monthly_income = st.number_input("Total Monthly Income (₹)", value=int(total_income))
@@ -196,7 +212,6 @@ else:
         value=int(st.session_state.get("daily_limit", 150))
     )
     
-    
     rent, food, transport, utilities, emi_total = 0, 0, 0, 0, 0
     livelihood_sources = ["Student Allowance"]
     crops_grown, held_assets = [], []
@@ -216,7 +231,6 @@ alert_channels = st.multiselect("Alerts", ["Text", "Voice"], default=["Text"])
 # ==========================================
 if st.button("🚀 Activate Sentinel", type="primary", use_container_width=True):
     
-    
     with st.status("🔄 Configuring Sentinel Core...", expanded=True) as status:
         if "Student" in user_type:
             st.write("Calibrating Student Budget...")
@@ -231,7 +245,6 @@ if st.button("🚀 Activate Sentinel", type="primary", use_container_width=True)
         st.write("Saving Profile Encrypted...")
         status.update(label="✅ Setup Complete!", state="complete", expanded=False)
 
-    
     if "Student" in user_type:
         st.session_state["user_type"] = "Student"
         st.session_state["college_name"] = college_name
@@ -271,12 +284,10 @@ if st.button("🚀 Activate Sentinel", type="primary", use_container_width=True)
         )
         st.session_state["net_savings"] = net_savings
 
-    
     st.session_state["burn"] = burn
     st.session_state["runway_days"] = runway
     st.session_state["risk_score"] = risk
     st.session_state["profile_complete"] = True
-    
     
     from db_ops import save_profile
     
