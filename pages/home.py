@@ -19,7 +19,7 @@ except ImportError:
 try:
     from db_ops import save_profile
 except ImportError:
-    # Fallback if db_ops.py is missing or renamed
+    # Fallback if db_ops.py is missing
     def save_profile(data):
         pass
 
@@ -29,31 +29,16 @@ except ImportError:
 st.set_page_config(
     page_title="Livelihood Sentinel", 
     page_icon=":material/shield:",
-    layout="centered"
+    layout="centered",
+    initial_sidebar_state="expanded"
 )
 
-# --- [FIX] CSS STABILIZER TO PREVENT SCREEN JUMP/RESIZE ---
-st.markdown("""
-    <style>
-        /* Forces the vertical scrollbar to be visible always, preventing left-right jumps */
-        [data-testid="stAppViewContainer"] {
-            overflow-y: scroll;
-        }
-        /* Stabilizes the main content container width */
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 5rem;
-        }
-    </style>
-""", unsafe_allow_html=True)
-# -----------------------------------------------------------
-
 def initialize_state():
-    """Initializes all session state variables to prevent KeyErrors."""
+    """Initializes all session state variables."""
     defaults = {
-        "logged_in": False,             # Set to True to test without login
-        "profile_complete": False,      # Set to True to test dashboard directly
-        "user_type": "Student",         # Default type
+        "logged_in": False,
+        "profile_complete": False,
+        "user_type": "Student",
         "today_spend": 0.0,
         "savings_buffer": 0.0,
         "daily_limit": 100.0,
@@ -73,14 +58,12 @@ def initialize_state():
         if key not in st.session_state:
             st.session_state[key] = value
 
-# Run Initialization immediately
 initialize_state()
 
 # ==========================================
 # 1. HELPER FUNCTIONS & ASSETS
 # ==========================================
 
-# Asset URLs
 LOTTIE_SAFE = "https://assets2.lottiefiles.com/packages/lf20_x62chJ.json"
 LOTTIE_CRITICAL = "https://assets10.lottiefiles.com/packages/lf20_qp1q7mct.json"
 
@@ -101,7 +84,7 @@ def get_gemini_dashboard_insight(income, burn, runway, risk_score):
         
     api_key = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
     if not api_key:
-        return "⚠️ Gemini Key missing. Unable to generate real-time insight."
+        return "⚠️ Gemini Key missing."
     
     try:
         genai.configure(api_key=api_key)
@@ -109,8 +92,7 @@ def get_gemini_dashboard_insight(income, burn, runway, risk_score):
         prompt = (
             f"Analyze this financial status: Monthly Income {income}, Monthly Burn {burn}, "
             f"Survival Runway {runway} days, Risk Score {risk_score}/100. "
-            "Provide exactly ONE short, punchy sentence (max 20 words) of advice or warning. "
-            "Be direct. No preamble."
+            "Provide exactly ONE short, punchy sentence (max 20 words) of advice or warning."
         )
         response = model.generate_content(prompt)
         return response.text.strip()
@@ -134,8 +116,7 @@ def speak_text(text):
 # ==========================================
 if not st.session_state["logged_in"]:
     st.warning("🔒 Access Restricted. Please log in.")
-    # For debugging/hackathon, you might want a "Quick Login" button here
-    if st.button("Dev Login (Bypass)"):
+    if st.button("Dev Login (Bypass)", key="dev_login_btn"):
         st.session_state["logged_in"] = True
         st.session_state["profile_complete"] = True
         st.rerun()
@@ -147,8 +128,7 @@ if not st.session_state["profile_complete"]:
     with c1:
         st.markdown("### Let's secure your future.")
         st.write("To activate the Sentinel, we need to know who you are.")
-        st.info("Choose 'Student' or 'Standard' mode in setup.")
-        if st.button("🚀 Start Tracking Setup", type="primary", use_container_width=True):
+        if st.button("🚀 Start Tracking Setup", type="primary", use_container_width=True, key="setup_btn"):
             st.switch_page("pages/tracking.py")
     with c2:
         st.markdown("<h1>📋</h1>", unsafe_allow_html=True)
@@ -159,10 +139,10 @@ if not st.session_state["profile_complete"]:
 # ==========================================
 user_type = st.session_state["user_type"]
 
-# Check for Active Protocols (The "Glue" Feature)
+# Alert Banner
 active_protocol = st.session_state.get("advice_topic_context")
 if active_protocol:
-    st.error(f"⚠️ **ACTIVE DEFENSE PROTOCOL:** {active_protocol} (Check Advice Page)", icon="🚨")
+    st.error(f"⚠️ **ACTIVE PROTOCOL:** {active_protocol}", icon="🚨")
 
 # ------------------------------------------
 # A. STUDENT DASHBOARD
@@ -170,14 +150,15 @@ if active_protocol:
 if user_type == "Student":
     
     # --- Header ---
-    col_a, col_b = st.columns([3, 1])
+    col_a, col_b = st.columns([3, 1], gap="medium")
     with col_a:
         st.title("🎓 Student Sentinel")
         college = st.session_state.get("college_name", "Campus")
         stream = st.session_state.get('study_stream', 'General')
         st.caption(f"📍 {college} • 📚 {stream}")
     with col_b:
-        if st.button("🔄 Reset Day", help="Resets 'Spent Today' to 0"):
+        st.write("") # Spacer to align button
+        if st.button("🔄 Reset Day", help="Resets 'Spent Today' to 0", key="reset_day_btn"):
             st.session_state["today_spend"] = 0.0
             save_profile({"today_spend": 0.0}) 
             st.rerun()
@@ -185,16 +166,18 @@ if user_type == "Student":
     st.divider()
 
     # --- Wallet Metrics ---
-    # Convert to float for math, int for display
     wallet = float(st.session_state["savings_buffer"]) 
     daily_limit = float(st.session_state["daily_limit"])
     today_spend = float(st.session_state["today_spend"])
     remaining_limit = max(0.0, daily_limit - today_spend)
     
-    m1, m2, m3 = st.columns(3)
-    m1.metric("💰 Wallet Balance", f"₹{int(wallet)}")
-    m2.metric("📉 Spent Today", f"₹{int(today_spend)}", delta=f"Limit: ₹{int(daily_limit)}", delta_color="off")
-    m3.metric("✅ Safe to Spend", f"₹{int(remaining_limit)}", delta="Daily Budget", delta_color="normal")
+    m1, m2, m3 = st.columns(3, gap="small")
+    with m1:
+        st.metric("💰 Wallet", f"₹{int(wallet)}")
+    with m2:
+        st.metric("📉 Spent", f"₹{int(today_spend)}", delta=f"Limit: ₹{int(daily_limit)}", delta_color="off")
+    with m3:
+        st.metric("✅ Safe", f"₹{int(remaining_limit)}", delta="Budget", delta_color="normal")
 
     # --- Limit Meter ---
     if daily_limit > 0:
@@ -238,16 +221,16 @@ if user_type == "Student":
     # --- Lending Log & Notes ---
     st.subheader("📝 Lending Log & Notes")
     saved_note = st.session_state["student_note"]
-    user_note = st.text_area("Notes", value=saved_note, height=100, placeholder="Ex: Gave ₹500 to Rahul...")
+    user_note = st.text_area("Notes", value=saved_note, height=100, placeholder="Ex: Gave ₹500 to Rahul...", key="student_notes_area")
 
     n_col1, n_col2 = st.columns([1, 1])
     with n_col1:
-        if st.button("💾 Save Note", use_container_width=True):
+        if st.button("💾 Save Note", use_container_width=True, key="save_note_btn"):
             st.session_state["student_note"] = user_note
             save_profile({"student_note": user_note})
             st.toast("Note saved!")
     with n_col2:
-        if st.button("🔊 Read Aloud", use_container_width=True):
+        if st.button("🔊 Read Aloud", use_container_width=True, key="read_note_btn"):
             if user_note.strip():
                 audio_fp = speak_text(user_note)
                 if audio_fp:
@@ -258,15 +241,14 @@ if user_type == "Student":
     st.divider()
 
     # --- Quick Log (Spend Tracker) ---
-    st.subheader("⚡ Quick Log", help="Add your daily expenses here manually.")
+    st.subheader("⚡ Quick Log")
     
     with st.container(border=True):
-        if st.button("🔗 Auto-Track via Bank SMS", help="Link your bank SMS", use_container_width=True):
-            st.toast("🚀 Coming Soon: Account Aggregator Integration", icon="🚧")
+        if st.button("🔗 Auto-Track via Bank SMS", use_container_width=True, key="bank_sms_btn"):
+            st.toast("🚀 Coming Soon: Phase 2", icon="🚧")
             
         st.divider()
         
-        # Helper Function to Deduct Money
         def quick_deduct(val):
             val = float(val)
             st.session_state["savings_buffer"] -= val
@@ -280,21 +262,21 @@ if user_type == "Student":
         st.caption("Common Spends:")
         qb1, qb2, qb3 = st.columns(3)
         with qb1:
-            if st.button("☕ ₹50", use_container_width=True): quick_deduct(50)
+            if st.button("☕ ₹50", use_container_width=True, key="spend_50"): quick_deduct(50)
         with qb2:
-            if st.button("🍔 ₹100", use_container_width=True): quick_deduct(100)
+            if st.button("🍔 ₹100", use_container_width=True, key="spend_100"): quick_deduct(100)
         with qb3:
-            if st.button("🚌 ₹30", use_container_width=True): quick_deduct(30)
+            if st.button("🚌 ₹30", use_container_width=True, key="spend_30"): quick_deduct(30)
 
         st.caption("Custom Entry:")
         c_input, c_btn1, c_btn2 = st.columns([2, 1, 1])
         with c_input:
             amount = st.number_input("Amount (₹)", min_value=0.0, step=10.0, key="trans_amt")
         with c_btn1:
-            if st.button("Spent", use_container_width=True, type="primary"):
+            if st.button("Spent", use_container_width=True, type="primary", key="custom_spend_btn"):
                 if amount > 0: quick_deduct(amount)
         with c_btn2:
-            if st.button("Got Cash", use_container_width=True):
+            if st.button("Got Cash", use_container_width=True, key="add_cash_btn"):
                 if amount > 0:
                     st.session_state["savings_buffer"] += amount
                     save_profile({"savings_buffer": st.session_state["savings_buffer"]})
@@ -307,13 +289,13 @@ if user_type == "Student":
     stream_short = stream.split(" ")[0] if stream else "Career"
     
     with nav1:
-        if st.button(f"📰 {stream_short} News", use_container_width=True):
+        if st.button(f"📰 News", use_container_width=True, key="nav_news_stu"):
             st.switch_page("pages/news_alerts.py")
     with nav2:
-        if st.button("💡 Money Advice", use_container_width=True):
+        if st.button("💡 Advice", use_container_width=True, key="nav_advice_stu"):
             st.switch_page("pages/advice.py")
     with nav3:
-        if st.button("⚙️ Settings", use_container_width=True):
+        if st.button("⚙️ Settings", use_container_width=True, key="nav_set_stu"):
             st.switch_page("pages/settings.py")
 
 
@@ -327,7 +309,7 @@ else:
     burn = float(st.session_state["burn"])
     net_savings = float(st.session_state["net_savings"])
 
-    # Determine Status & Animation
+    # Determine Status
     if risk >= 75 or runway <= 15:
         status_msg = "CRITICAL THREATS"
         status_color = "red"
@@ -341,21 +323,22 @@ else:
         status_color = "green"
         lottie_url = LOTTIE_SAFE
 
-    # --- Dashboard Header (with Lottie Avatar) ---
-    c1, c2 = st.columns([3, 1]) 
+    # --- Dashboard Header (FIXED STABILITY) ---
+    c1, c2 = st.columns([2.5, 1], gap="medium") 
     with c1:
         st.title("Livelihood Sentinel")
-        st.caption(f"Mode: Standard • Language: {st.session_state.get('lang', 'English')}")
+        st.caption(f"Mode: Standard • Lang: {st.session_state.get('lang', 'English')}")
         st.markdown(f"### Status: :{status_color}[{status_msg}]")
         
     with c2:
+        # We enforce a fixed height to prevent "Jumping" during load
         lottie_json = load_lottieurl(lottie_url)
         if lottie_json:
-            st_lottie(lottie_json, height=100, key="sentinel_avatar")
+            st_lottie(lottie_json, height=120, key="sentinel_avatar")
         else:
             st.markdown("<h1>🛡️</h1>", unsafe_allow_html=True) 
 
-    if st.button("🔍 Run Deep Scan", help="Analyze new alerts"):
+    if st.button("🔍 Run Deep Scan", help="Analyze new alerts", key="deep_scan_btn"):
         scan_placeholder = st.empty()
         scan_logs = [
             "> Initializing Sentinel Sat-Link...",
@@ -377,9 +360,12 @@ else:
     income = float(st.session_state["monthly_income"])
     
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Monthly Income", f"₹{int(income):,}")
-    col2.metric("Monthly Burn", f"₹{int(burn):,}")
-    col3.metric("Net Savings", f"₹{int(net_savings):,}")
+    with col1:
+        st.metric("Monthly Income", f"₹{int(income):,}")
+    with col2:
+        st.metric("Monthly Burn", f"₹{int(burn):,}")
+    with col3:
+        st.metric("Net Savings", f"₹{int(net_savings):,}")
 
     if runway > 900:
         runway_display = "Infinite"
@@ -388,16 +374,15 @@ else:
         runway_display = f"{runway} Days"
         delta_display = "-2 days" if runway < 30 else "Stable"
 
-    col4.metric(
-        "Survival Runway", 
-        runway_display, 
-        delta=delta_display, 
-        delta_color="inverse",
-        help="How many days your family can survive if income stops."
-    )
+    with col4:
+        st.metric(
+            "Survival Runway", 
+            runway_display, 
+            delta=delta_display, 
+            delta_color="inverse"
+        )
     
-    # -- Bank Link --
-    if st.button("🔗 Connect Bank / SMS for Auto-Tracking", use_container_width=True):
+    if st.button("🔗 Connect Bank / SMS for Auto-Tracking", use_container_width=True, key="std_bank_link"):
          st.toast("🚀 Coming Soon: Account Aggregator Integration", icon="🚧")
 
     # --- EMERGENCY SIMULATOR ---
@@ -406,11 +391,11 @@ else:
         
         sc1, sc2 = st.columns([2, 1])
         with sc1:
-            shock_amount = st.number_input("Emergency Cost (₹)", min_value=0.0, value=50000.0, step=5000.0)
+            shock_amount = st.number_input("Emergency Cost (₹)", min_value=0.0, value=50000.0, step=5000.0, key="shock_input")
         with sc2:
             st.write("") 
             st.write("")
-            simulate_btn = st.button("💥 Simulate", type="primary", use_container_width=True)
+            simulate_btn = st.button("💥 Simulate", type="primary", use_container_width=True, key="sim_btn")
 
         if simulate_btn:
             temp_savings = net_savings - shock_amount
@@ -437,6 +422,7 @@ else:
     # --- Gemini Analysis ---
     st.subheader("🤖 Gemini Analysis")
     with st.container(border=True):
+        # Using a container here keeps layout stable while spinner runs
         with st.spinner("Gemini is analyzing your live metrics..."):
             ai_insight = get_gemini_dashboard_insight(income, burn, runway, risk)
         
@@ -451,17 +437,17 @@ else:
     with left:
         with st.container(border=True):
             st.caption("Active Alerts")
-            if st.button("📰 View News", key="nav_news", use_container_width=True):
+            if st.button("📰 View News", key="nav_news_std", use_container_width=True):
                 st.switch_page("pages/news_alerts.py")
 
     with right:
         with st.container(border=True):
             st.caption("Audio Update")
-            if st.button("🎙️ Voice Assistant", key="nav_voice", use_container_width=True):
+            if st.button("🎙️ Voice Assistant", key="nav_voice_std", use_container_width=True):
                 st.switch_page("pages/voice.py")
 
     with last:
         with st.container(border=True):
              st.caption("System")
-             if st.button("⚙️ Settings", key="nav_settings", use_container_width=True):
+             if st.button("⚙️ Settings", key="nav_settings_std", use_container_width=True):
                  st.switch_page("pages/settings.py")
