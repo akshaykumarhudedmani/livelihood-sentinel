@@ -5,7 +5,7 @@ import requests
 from io import BytesIO
 from streamlit_lottie import st_lottie
 
-# --- Library Checks (Graceful Fallbacks) ---
+
 try:
     import google.generativeai as genai
 except ImportError:
@@ -19,7 +19,7 @@ except ImportError:
 try:
     from db_ops import save_profile
 except ImportError:
-    # Fallback if db_ops.py is missing or renamed
+    
     def save_profile(data):
         pass
 
@@ -32,28 +32,12 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- [FIX] CSS STABILIZER TO PREVENT SCREEN JUMP/RESIZE ---
-st.markdown("""
-    <style>
-        /* Forces the vertical scrollbar to be visible always, preventing left-right jumps */
-        [data-testid="stAppViewContainer"] {
-            overflow-y: scroll;
-        }
-        /* Stabilizes the main content container width */
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 5rem;
-        }
-    </style>
-""", unsafe_allow_html=True)
-# -----------------------------------------------------------
-
 def initialize_state():
     """Initializes all session state variables to prevent KeyErrors."""
     defaults = {
-        "logged_in": False,             # Set to True to test without login
-        "profile_complete": False,      # Set to True to test dashboard directly
-        "user_type": "Student",         # Default type
+        "logged_in": False,             
+        "profile_complete": False,      
+        "user_type": "Student",         
         "today_spend": 0.0,
         "savings_buffer": 0.0,
         "daily_limit": 100.0,
@@ -73,7 +57,7 @@ def initialize_state():
         if key not in st.session_state:
             st.session_state[key] = value
 
-# Run Initialization immediately
+
 initialize_state()
 
 # ==========================================
@@ -134,7 +118,7 @@ def speak_text(text):
 # ==========================================
 if not st.session_state["logged_in"]:
     st.warning("🔒 Access Restricted. Please log in.")
-    # For debugging/hackathon, you might want a "Quick Login" button here
+    
     if st.button("Dev Login (Bypass)"):
         st.session_state["logged_in"] = True
         st.session_state["profile_complete"] = True
@@ -159,7 +143,7 @@ if not st.session_state["profile_complete"]:
 # ==========================================
 user_type = st.session_state["user_type"]
 
-# Check for Active Protocols (The "Glue" Feature)
+
 active_protocol = st.session_state.get("advice_topic_context")
 if active_protocol:
     st.error(f"⚠️ **ACTIVE DEFENSE PROTOCOL:** {active_protocol} (Check Advice Page)", icon="🚨")
@@ -169,7 +153,7 @@ if active_protocol:
 # ------------------------------------------
 if user_type == "Student":
     
-    # --- Header ---
+    # --- Header ----
     col_a, col_b = st.columns([3, 1])
     with col_a:
         st.title("🎓 Student Sentinel")
@@ -185,7 +169,7 @@ if user_type == "Student":
     st.divider()
 
     # --- Wallet Metrics ---
-    # Convert to float for math, int for display
+    
     wallet = float(st.session_state["savings_buffer"]) 
     daily_limit = float(st.session_state["daily_limit"])
     today_spend = float(st.session_state["today_spend"])
@@ -257,7 +241,7 @@ if user_type == "Student":
 
     st.divider()
 
-    # --- Quick Log (Spend Tracker) ---
+    # --- Quick Log ---
     st.subheader("⚡ Quick Log", help="Add your daily expenses here manually.")
     
     with st.container(border=True):
@@ -266,7 +250,7 @@ if user_type == "Student":
             
         st.divider()
         
-        # Helper Function to Deduct Money
+        
         def quick_deduct(val):
             val = float(val)
             st.session_state["savings_buffer"] -= val
@@ -341,7 +325,7 @@ else:
         status_color = "green"
         lottie_url = LOTTIE_SAFE
 
-    # --- Dashboard Header (with Lottie Avatar) ---
+    # --- Dashboard Header  ---
     c1, c2 = st.columns([3, 1]) 
     with c1:
         st.title("Livelihood Sentinel")
