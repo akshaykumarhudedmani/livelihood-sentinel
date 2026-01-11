@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#00FF7F"    # Neon Green (Sentinel accent)
+backgroundColor = "#0E1117" # Deep Dark Background
+secondaryBackgroundColor = "#262730" # Lighter dark for sidebars/containers
+textColor = "#FAFAFA"       # White text for readability
+font = "monospace"  
