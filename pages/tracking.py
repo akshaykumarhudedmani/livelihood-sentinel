@@ -70,7 +70,7 @@ def compute_student_stats(wallet_balance, daily_limit):
 if "Standard" in user_type:
     st.subheader("Step 1: Income Sources")
     
-    # 1. Source Selection (Instant Update)
+    
     livelihood_sources = st.multiselect(
         "How do you earn?",
         options=[
@@ -82,7 +82,7 @@ if "Standard" in user_type:
         default=st.session_state.get("livelihood_sources", ["Fixed income (Salary/Pension)"]),
     )
 
-    # 2. Smart Inputs (Conditional Visibility)
+    
     fixed_monthly = 0
     if "Fixed income (Salary/Pension)" in livelihood_sources:
         fixed_monthly = st.number_input("Monthly Salary/Pension (₹)", min_value=0, step=500, value=int(st.session_state.get("fixed_monthly", 25000)))
@@ -96,7 +96,7 @@ if "Standard" in user_type:
     production_type = "N/A"
     crops_grown = []
 
-    # Only ask production details if selected
+    
     if "Production-based (Farming/Business)" in livelihood_sources:
         st.markdown("---")
         st.caption("🏭 Production / Farming Details")
@@ -107,10 +107,10 @@ if "Standard" in user_type:
         with c_prod2:
             farm_avg_monthly = st.number_input("Avg. Monthly Revenue (₹)", min_value=0, step=500, value=int(st.session_state.get("farm_avg_monthly", 0)))
         
-        # SMART HIDDEN: Input Costs
+    
         crop_input_cost = st.number_input("Input Costs (Seeds/Stock) (₹)", min_value=0, step=500, value=int(st.session_state.get("crop_input_cost", 0)))
         
-        # SMART HIDDEN: Crops only if farming
+        
         if production_type == "Farming":
             crops_grown = st.multiselect(
                 "Crops Grown (for Weather Alerts)",
@@ -120,13 +120,13 @@ if "Standard" in user_type:
 
     sip = 0
     held_assets = []
-    # Only ask Investment details if selected
+    
     if "Investment income (Stocks/Rent)" in livelihood_sources:
         st.markdown("---")
         st.caption("📈 Investment Details")
         sip = st.number_input("Monthly SIP/Investment (₹)", min_value=0, step=500, value=int(st.session_state.get("sip", 0)))
         
-        # SMART HIDDEN: Holdings
+        
         held_assets = st.multiselect(
             "Portfolio Assets (for Market News)",
             ["Stocks", "Mutual Funds", "Gold", "Crypto", "Real Estate"],
@@ -136,7 +136,7 @@ if "Standard" in user_type:
     st.divider()
     st.subheader("Step 2: Core Expenses")
     
-    # Auto-sum income
+    
     total_income = fixed_monthly + gig_avg_monthly + farm_avg_monthly
     monthly_income = st.number_input("Total Monthly Income (₹)", value=int(total_income))
     
@@ -196,7 +196,7 @@ else:
         value=int(st.session_state.get("daily_limit", 150))
     )
     
-    # Defaults for student to avoid errors
+    
     rent, food, transport, utilities, emi_total = 0, 0, 0, 0, 0
     livelihood_sources = ["Student Allowance"]
     crops_grown, held_assets = [], []
@@ -208,7 +208,7 @@ else:
 
 st.divider()
 
-# Language Selection (Common)
+# Language Selection 
 alert_channels = st.multiselect("Alerts", ["Text", "Voice"], default=["Text"])
 
 # ==========================================
@@ -216,7 +216,7 @@ alert_channels = st.multiselect("Alerts", ["Text", "Voice"], default=["Text"])
 # ==========================================
 if st.button("🚀 Activate Sentinel", type="primary", use_container_width=True):
     
-    # A. The Loading Effect
+    
     with st.status("🔄 Configuring Sentinel Core...", expanded=True) as status:
         if "Student" in user_type:
             st.write("Calibrating Student Budget...")
@@ -231,7 +231,7 @@ if st.button("🚀 Activate Sentinel", type="primary", use_container_width=True)
         st.write("Saving Profile Encrypted...")
         status.update(label="✅ Setup Complete!", state="complete", expanded=False)
 
-    # B. Save to Session State
+    
     if "Student" in user_type:
         st.session_state["user_type"] = "Student"
         st.session_state["college_name"] = college_name
@@ -271,13 +271,13 @@ if st.button("🚀 Activate Sentinel", type="primary", use_container_width=True)
         )
         st.session_state["net_savings"] = net_savings
 
-    # Common Saves
+    
     st.session_state["burn"] = burn
     st.session_state["runway_days"] = runway
     st.session_state["risk_score"] = risk
     st.session_state["profile_complete"] = True
     
-    # C. Persist to DB
+    
     from db_ops import save_profile
     
     profile_data = {

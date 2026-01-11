@@ -259,7 +259,7 @@ else:
     elif risk >= 50 or runway <= 30:
         status_msg = "MONITORING RISKS"
         status_color = "orange"
-        lottie_url = LOTTIE_CRITICAL # Use alert for warning too
+        lottie_url = LOTTIE_CRITICAL 
     else:
         status_msg = "LIVELIHOOD SECURE"
         status_color = "green"
@@ -278,11 +278,11 @@ else:
         if lottie_json:
             st_lottie(lottie_json, height=100, key="sentinel_avatar")
         else:
-            st.markdown("<h1>🛡️</h1>", unsafe_allow_html=True) # Fallback
+            st.markdown("<h1>🛡️</h1>", unsafe_allow_html=True) 
 
-    # --- THE "HACKER" DEEP SCAN BUTTON ---
+    
     if st.button("🔍 Run Deep Scan", help="Analyze new alerts"):
-        # The Wow Factor: Hacker-style loading text
+    
         scan_placeholder = st.empty()
         scan_logs = [
             "> Initializing Sentinel Sat-Link...",
@@ -293,9 +293,9 @@ else:
         ]
         for log in scan_logs:
             scan_placeholder.markdown(f"```\n{log}\n```")
-            time.sleep(0.7) # Pause for effect
+            time.sleep(0.7) 
         
-        scan_placeholder.empty() # Clear the logs
+        scan_placeholder.empty() 
         st.switch_page("pages/news_alerts.py")
 
     st.divider()
@@ -359,7 +359,7 @@ else:
                 st.error("Result: CRITICAL FAILURE. You need an Emergency Fund.")
             else:
                 st.success("Result: SURVIVABLE. You have enough buffer.")
-                st.balloons() # Extra Wow Factor for surviving
+                st.balloons()
 
     st.divider()
     st.subheader("🤖 Gemini Analysis")

@@ -158,14 +158,14 @@ if user_type == "Student":
             st.write(f"*{quote}*")
             st.caption("Keep pushing. You are building your future.")
             
-            # THE FIXED LISTEN BUTTON
+            
             if st.button("🎙️ Listen", key="btn_voice_mot"):
-                # 1. Clear old audio cache (CRITICAL FIX)
+                
                 st.session_state.pop("voice_audio_mp3", None)
                 st.session_state.pop("translated_script", None)
                 st.session_state.pop("voice_script", None)
                 
-                # 2. Set new data
+                
                 st.session_state["voice_selected_alert_id"] = "daily_motivation"
                 st.session_state["alerts"] = [motivation_obj] 
                 st.switch_page("pages/voice.py")
@@ -188,14 +188,14 @@ if user_type == "Student":
             st.write("Never be ashamed of not having money. It is a temporary stage, not your identity.")
             st.write("Save what you can. If you really need to borrow, ask close friends or family—there is always someone willing to help.")
             
-            # THE FIXED LISTEN BUTTON
+            
             if st.button("🎙️ Listen", key="btn_voice_adv"):
-                # 1. Clear old audio cache (CRITICAL FIX)
+                
                 st.session_state.pop("voice_audio_mp3", None)
                 st.session_state.pop("translated_script", None)
                 st.session_state.pop("voice_script", None)
                 
-                # 2. Set new data
+                
                 st.session_state["voice_selected_alert_id"] = "financial_advice_note"
                 st.session_state["alerts"] = [advice_obj]
                 st.switch_page("pages/voice.py")
@@ -246,7 +246,7 @@ else:
                 b1, b2 = st.columns([1, 1])
                 with b1:
                     if st.button("🎙️ Listen", key=f"btn_voice_{sim['id']}", use_container_width=True):
-                        # 1. Clear old audio cache (CRITICAL FIX)
+                        
                         st.session_state.pop("voice_audio_mp3", None)
                         st.session_state.pop("translated_script", None)
                         st.session_state.pop("voice_script", None)

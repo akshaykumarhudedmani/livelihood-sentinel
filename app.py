@@ -1,6 +1,6 @@
 import streamlit as st
 
-# ---------- App config ----------
+
 st.set_page_config(
     page_title="Livelihood Sentinel",
     page_icon="🌿",
@@ -8,17 +8,17 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ---------- Session defaults ----------
+
 st.session_state.setdefault("logged_in", False)
 st.session_state.setdefault("lang", "English")
 st.session_state.setdefault("profile_complete", False)
 
-# Safe defaults used by other pages
+
 st.session_state.setdefault("alerts", [])
 st.session_state.setdefault("resolved_alert_ids", set())
 st.session_state.setdefault("voice_selected_alert_id", None)
 
-# ---------- Sidebar: Language (Coming soon) ----------
+
 LANGS = ["English", "Kannada", "Hindi"]
 st.sidebar.selectbox("Language", LANGS, key="lang")
 
@@ -28,7 +28,7 @@ if st.session_state["lang"] != "English":
         icon="ℹ️",
     )
 
-# ---------- Page registry ----------
+
 login_page = st.Page(
     "pages/login.py",
     title="Demo Login",
@@ -78,7 +78,7 @@ settings_page = st.Page(
     url_path="settings",
 )
 
-# ---------- Navigation ----------
+
 if st.session_state["logged_in"]:
     pg = st.navigation(
         {

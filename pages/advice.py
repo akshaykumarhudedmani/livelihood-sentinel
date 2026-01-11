@@ -83,7 +83,7 @@ st.divider()
 # 3. TOPIC SELECTION (Auto vs Manual)
 # ==========================================
 
-# If Protocol is active (clicked from News), we lock the topic
+
 if protocol_context:
     selected_topic = protocol_context
     st.info(f"The Sentinel has detected a specific threat: **{protocol_context}**. Generating counter-measures.")
@@ -93,7 +93,7 @@ if protocol_context:
         st.session_state.pop("advice_topic_context", None)
         st.rerun()
 
-# Normal Manual Selection
+
 else:
     if user_type == "Student":
         topics = [
@@ -117,7 +117,7 @@ else:
 # ==========================================
 # 4. CONTEXT PACKAGING
 # ==========================================
-# We pack the relevant data to send to the specific AI Persona
+
 
 if user_type == "Student":
     wallet = st.session_state.get("savings_buffer", 0)
@@ -153,7 +153,7 @@ else:
 with st.container(border=True):
     st.markdown("### AI Analysis Center")
     
-    # Dynamic Button Label based on Protocol status
+    
     final_btn_label = f"🚨 Generate Protocol for {selected_topic}" if protocol_context else btn_label
     
     if st.button(final_btn_label, type="primary", use_container_width=True):
@@ -172,7 +172,7 @@ with st.container(border=True):
             
             status.update(label="Analysis Complete", state="complete", expanded=False)
         
-        # Error Handling Display
+        
         if "Traffic Overload" in advice_result:
              st.warning(advice_result, icon="⏳")
         elif "Connection Error" in advice_result:
@@ -185,7 +185,7 @@ with st.container(border=True):
              st.session_state["last_advice"] = advice_result
              st.session_state["last_advice_topic"] = selected_topic
 
-# History Display (Persistent)
+# History Display
 if "last_advice" in st.session_state and not protocol_context:
     st.divider()
     st.caption(f"Previously generated for: {st.session_state.get('last_advice_topic', 'Unknown')}")

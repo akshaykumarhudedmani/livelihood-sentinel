@@ -27,7 +27,7 @@ def save_alerts(alerts: list[dict]):
     db = get_db()
     base = db.collection("users").document(DEMO_USER_ID).collection("alerts")
 
-    # write each alert as its own document (id must exist)
+    
     for a in alerts:
         aid = a.get("id")
         if not aid:

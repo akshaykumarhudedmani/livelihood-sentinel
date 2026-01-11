@@ -9,7 +9,7 @@ st.title("⚙️ Settings")
 st.caption("Language + Reset demo state")
 st.divider()
 
-# ---- Firebase connectivity (non-blocking) ----
+# ---- Firebase connectivity ----
 try:
     from firestore_db import get_db
 
@@ -22,7 +22,7 @@ except Exception as e:
 
 st.divider()
 
-# ---- Language (read-only here) ----
+
 st.subheader("Language")
 st.write(f"Current language: **{st.session_state.get('lang', 'English')}**")
 st.caption("Change language from the sidebar dropdown (top-left).")
@@ -37,7 +37,7 @@ with st.container(border=True):
 
     with c1:
         if st.button("Reset demo (clear profile + alerts)", use_container_width=True):
-            # FIXED: Added all new keys to ensure a full clean reset
+            
             keys_to_clear = [
                 "profile_complete",
                 "monthly_income",

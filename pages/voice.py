@@ -55,7 +55,7 @@ if user_type == "Student":
     
     quote = MOTIVATION_MAP.get(stream, MOTIVATION_MAP["General"])
     
-    # Force Student Alerts
+    
     st.session_state["alerts"] = [
         {
             "id": "daily_motivation",
@@ -73,19 +73,19 @@ if user_type == "Student":
 
 # --- CASE B: STANDARD MODE (The Fix) ---
 else:
-    # 1. Check if we accidentally have Student alerts loaded (clean up)
+    
     current_alerts = st.session_state.get("alerts", [])
     if current_alerts and current_alerts[0]["id"] == "daily_motivation":
         current_alerts = [] # Wipe them
         
-    # 2. If Empty, Generate Standard Drills on the spot
+    
     if not current_alerts:
         transport = int(st.session_state.get("transport", 0))
         emi_total = int(st.session_state.get("emi_total", 0))
         
         standard_drills = []
         
-        # Drill 1: Fuel
+        
         if transport > 0:
             standard_drills.append({
                 "id": "fuel_drill",
@@ -94,7 +94,7 @@ else:
                 "desc": "Impact Analysis: Moderate"
             })
             
-        # Drill 2: Loans
+    
         if emi_total > 0:
             standard_drills.append({
                 "id": "rate_drill",
@@ -103,7 +103,7 @@ else:
                 "desc": "Impact Analysis: Critical"
             })
             
-        # Drill 3: Inflation (Default for everyone)
+        
         standard_drills.append({
             "id": "inflation_drill",
             "title": "Cost of Living Report",
@@ -144,7 +144,7 @@ st.divider()
 # ==========================================
 left_col, right_col = st.columns([1, 1])
 
-# --- LEFT COLUMN: Controls ---
+
 with left_col:
     alerts = st.session_state.get("alerts", [])
     
@@ -154,17 +154,17 @@ with left_col:
             st.switch_page("pages/home.py")
         st.stop()
     
-    # Create valid list of IDs
+
     alert_ids = [a["id"] for a in alerts]
     alert_titles = [f"{'🔥' if 'motivation' in a['id'] else '📢'} {a['title']}" for a in alerts]
     
-    # Determine default index
+    
     default_idx = 0
     pre_selected_id = st.session_state.get("voice_selected_alert_id")
     if pre_selected_id in alert_ids:
         default_idx = alert_ids.index(pre_selected_id)
 
-    # The Dropdown
+    
     selected_idx = st.selectbox(
         "Select Content to Play:", 
         range(len(alerts)), 
@@ -174,11 +174,11 @@ with left_col:
     
     target_alert = alerts[selected_idx]
     
-    # Detect Switch: If user changes dropdown, clear old audio to force regeneration
+    # Detect Switch:
     if target_alert["id"] != st.session_state.get("current_voice_id_rendering"):
         st.session_state.pop("voice_audio_mp3", None)
         st.session_state["current_voice_id_rendering"] = target_alert["id"]
-        # Update the session pointer
+
         st.session_state["voice_selected_alert_id"] = target_alert["id"]
 
     # ---- GENERATOR LOGIC ----
@@ -203,7 +203,7 @@ with left_col:
             
             with st.status("Processing Neural Speech...", expanded=True) as status:
                 
-                # 1. Translation (if needed)
+                # 1. Translation
                 if target_code != "en":
                     st.write(f"Translating to {selected_lang_name}...")
                     try:
@@ -214,7 +214,7 @@ with left_col:
                 else:
                     final_text = raw_script
                 
-                # Save text for display
+                # Save text
                 st.session_state["translated_script"] = final_text
                 
                 st.write("Synthesizing Audio...")
@@ -235,7 +235,7 @@ with left_col:
                     status.update(label="Failed", state="error")
                     st.error(f"TTS Error: {e}")
 
-# --- RIGHT COLUMN: Script Display ---
+
 with right_col:
     with st.container(border=True):
         c_head, c_anim = st.columns([3, 1])
@@ -245,7 +245,7 @@ with right_col:
             if lottie_voice:
                 st_lottie(lottie_voice, height=40, key="wave_anim")
 
-        # Show either the translated text (if generated) or raw text
+        
         display_text = st.session_state.get("translated_script", raw_script)
         
         st.text_area(
