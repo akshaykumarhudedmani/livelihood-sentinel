@@ -99,7 +99,7 @@ def get_gemini_dashboard_insight(income, burn, runway, risk_score):
     
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         prompt = (
             f"Analyze this financial status: Monthly Income {income}, Monthly Burn {burn}, "
             f"Survival Runway {runway} days, Risk Score {risk_score}/100. "
@@ -109,7 +109,7 @@ def get_gemini_dashboard_insight(income, burn, runway, risk_score):
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception:
-        return "Sentinel is offline (AI Connection Error)."
+        return "sorry for inconvenience! ,gemini 2.5 flash's credit has been currently overused, please check again later."
 
 def speak_text(text):
     if not gTTS:
@@ -477,7 +477,7 @@ else:
         if risk > 70:
              st.caption("Action: Check 'Variable' expenses in Tracking immediately.")
         
-    st.caption("Powered by Gemini 1.5 Flash • Real-time Calculation")
+    st.caption("Powered by Gemini 2.5 Flash • Real-time Calculation")
 
     # --- Footer Navigation ---
     left, right, last = st.columns(3)
