@@ -21,6 +21,9 @@ Livelihood Sentinel acts as a **Financial Immune System**:
 - Generates **voice-ready briefings** for accessibility
 - Supports **multi-livelihood profiles** (Student mode + Family/Farmer mode)
 
+Dashboard preview from Standard mode: <img width="1853" height="865" alt="Screenshot 2026-01-15 173159" src="https://github.com/user-attachments/assets/10ee8434-958e-433c-8787-b95f3cc340f9" />
+
+
 ---
 
 ## Key Features
